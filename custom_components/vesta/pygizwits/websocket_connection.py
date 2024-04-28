@@ -18,7 +18,7 @@ class WebsocketConnection:
     def __init__(
         self, session: ClientSession, device_manager: 'DeviceManager', websocket_info
     ):
-        self.device_manager: 'device_manager' = device_manager
+        self.device_manager: DeviceManager = device_manager
         self.session = session
         self.url = (
             websocket_info['pre']

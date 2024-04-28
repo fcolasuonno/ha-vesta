@@ -6,53 +6,49 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import VestaUpdateCoordinator
-from .vesta.model import VestaDevice, VestaDeviceStatus
+from .coordinator import VestaCoordinator
+from .pygizwits import GizwitsDevice
 from .const import DOMAIN
 
 
-class VestaEntity(CoordinatorEntity[VestaUpdateCoordinator]):
+class VestaEntity(CoordinatorEntity[VestaCoordinator]):
     """Vesta base entity type."""
 
     def __init__(
         self,
-        coordinator: VestaUpdateCoordinator,
+        coordinator: VestaCoordinator,
         config_entry: ConfigEntry,
-        device_id: str,
+        device: GizwitsDevice,
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         self.config_entry = config_entry
-        self.device_id = device_id
+        self.device = device
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Device information for the spa providing this entity."""
-
-        device_info = self.coordinator.api.devices[self.device_id]
-
         return DeviceInfo(
-            identifiers={(DOMAIN, self.device_id)},
-            name=device_info.alias,
-            model=device_info.device_type.value,
+            identifiers={(DOMAIN, self.device.device_id)},
+            name=self.device.alias,
+            model=self.device.product_name,
             manufacturer="Vesta",
         )
 
     @property
-    def vesta_device(self) -> VestaDevice | None:
-        """Get status data for the spa providing this entity."""
-        device: VestaDevice | None = self.coordinator.api.devices.get(self.device_id)
-        return device
+    def vesta_device(self) -> GizwitsDevice | None:
+        return self.device
 
     @property
-    def status(self) -> VestaDeviceStatus | None:
-        """Get status data for the spa providing this entity."""
-        status: VestaDeviceStatus | None = self.coordinator.data.devices.get(
-            self.device_id
-        )
-        return status
+    def status(self) -> bool | None:
+        """Get status data for the cooker providing this entity."""
+        return self.device.is_online and bool(self.device.attributes)
 
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
-        return self.Vesta_device is not None and self.Vesta_device.is_online
+        return self.device.is_online
+
+    @property
+    def name(self):
+        """Name of the entity."""
+        return self.vesta_device.alias

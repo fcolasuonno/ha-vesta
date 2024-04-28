@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 from logging import getLogger
 
 from homeassistant.config_entries import ConfigEntry
@@ -11,26 +10,24 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .vesta.api import VestaApi
+from .coordinator import VestaCoordinator
+from .pygizwits import DeviceManager, GizwitsClient
+
 from .const import (
-    CONF_API_ROOT,
-    CONF_API_ROOT_EU,
     CONF_PASSWORD,
-    CONF_USER_TOKEN,
-    CONF_USER_TOKEN_EXPIRY,
     CONF_USERNAME,
+    CONF_REGION,
+    CONF_APP_ID,
     DOMAIN,
 )
-from .coordinator import VestaUpdateCoordinator
 
 _LOGGER = getLogger(__name__)
 _PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
+    # Platform.BINARY_SENSOR,
     Platform.CLIMATE,
-    Platform.NUMBER,
-    Platform.SELECT,
-    Platform.SENSOR,
-    Platform.SWITCH,
+    # Platform.NUMBER,
+    # Platform.SELECT,
+    # Platform.SENSOR,
 ]
 
 
@@ -38,41 +35,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vesta from a config entry."""
     username = entry.data.get(CONF_USERNAME)
     password = entry.data.get(CONF_PASSWORD)
-    api_root = entry.data.get(CONF_API_ROOT)
-    user_token = entry.data.get(CONF_USER_TOKEN)
-    user_token_expiry = int(entry.data.get(CONF_USER_TOKEN_EXPIRY))
+    region = GizwitsClient.Region.from_value(entry.data.get(CONF_REGION))
+    app_id = entry.data.get(CONF_APP_ID)
 
     session = async_get_clientsession(hass)
 
-    # Check for an auth token
-    # If we have one that expires within 30 days, refresh it
-    expiry_cutoff = (datetime.now() + timedelta(days=30)).timestamp()
+    # Create a device manager and login
+    device_manager = DeviceManager(session, app_id, region)
 
-    if user_token and expiry_cutoff < user_token_expiry:
-        _LOGGER.info("Reusing existing access token")
-    else:
-        _LOGGER.info("Requesting a new auth token")
-        try:
-            token = await VestaApi.get_user_token(
-                session, username, password, api_root
-            )
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Failed to refresh API token: %s", ex)
-            raise ConfigEntryNotReady from ex
-        user_token = token.user_token
-        user_token_expiry = token.expiry
+    try:
+        await device_manager.login(username, password)
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.error("Failed to login: %s", ex)
+        raise ConfigEntryNotReady from ex
 
-        new_config_data = {
-            CONF_USER_TOKEN: user_token,
-            CONF_USER_TOKEN_EXPIRY: user_token_expiry,
-        }
-
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, **new_config_data}
-        )
-
-    api = VestaApi(session, user_token, api_root)
-    coordinator = VestaUpdateCoordinator(hass, api)
+    coordinator = VestaCoordinator(hass, device_manager)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -97,22 +74,3 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
-
-
-async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrates old config versions to the latest."""
-
-    _LOGGER.debug("Migrating from version %s", entry.version)
-
-    if entry.version == 1:
-        # API root needs to be set
-        # In version 1, this was hard coded to the EU endpoint
-        new = {**entry.data}
-        new[CONF_API_ROOT] = CONF_API_ROOT_EU
-        hass.config_entries.async_update_entry(entry, data=new, version=2)
-
-        _LOGGER.info("Migration to version %s successful", entry.version)
-        return True
-
-    _LOGGER.error("Existing schema version %s is not supported", entry.version)
-    return False

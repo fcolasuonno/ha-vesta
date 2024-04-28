@@ -1,12 +1,16 @@
 {
     "config": {
+        "abort": {
+            "already_configured": "Device is already configured"
+        },
         "step": {
             "user": {
                 "title": "Vesta Login",
                 "data": {
                     "username": "Username (e-mail address)",
                     "password": "Password",
-                    "apiroot": "API location"
+                    "appid": "Application ID",
+                    "region": "API location"
                 }
             }
         },

@@ -38,6 +38,10 @@ class GizwitsClient:
         EU = "eu"
         DEFAULT = "default"
 
+        @classmethod
+        def from_value(cls, value):
+            return cls(value)
+
     def __init__(
         self,
         session: ClientSession,

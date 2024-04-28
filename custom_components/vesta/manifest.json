@@ -5,10 +5,11 @@
     "@fcolasuonno"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "single_config_entry": true,
+  "dependencies": {},
   "documentation": "https://github.com/fcolasuonno/ha-vesta",
   "integration_type": "device",
-  "iot_class": "cloud_polling",
+  "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/fcolasuonno/ha-vesta/issues",
   "requirements": [],
   "version": "0.0.1"
