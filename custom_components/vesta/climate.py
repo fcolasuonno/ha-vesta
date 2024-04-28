@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.climate import ClimateEntity, ClimateEntityFeature
+from homeassistant.components.climate import ClimateEntity, ClimateEntityFeature, ClimateEntityDescription
 from homeassistant.components.climate.const import ATTR_HVAC_MODE, HVACAction, HVACMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature, PRECISION_TENTHS
@@ -35,7 +35,7 @@ async def async_setup_entry(
     for device_id, device in coordinator.device_manager.devices.items():
         entities.extend(
             [
-                VestaClimate(coordinator, config_entry, device_id, device),
+                VestaClimate(coordinator, config_entry, device),
             ]
         )
     async_add_entities(entities)
@@ -53,17 +53,20 @@ class VestaClimate(VestaEntity, ClimateEntity):
     _attr_precision = PRECISION_TENTHS
     _attr_target_temperature_step = PRECISION_TENTHS
     _enable_turn_on_off_backwards_compatibility = False
+    should_poll = False
 
     def __init__(
             self,
             coordinator: VestaCoordinator,
             config_entry: ConfigEntry,
-            device_id: str,
             device: GizwitsDevice
     ) -> None:
         """Initialize cooker."""
-        super().__init__(coordinator, config_entry, device)
-        self._attr_unique_id = f"{device_id}_cooker"
+        super().__init__(coordinator, config_entry, device, ClimateEntityDescription(
+            key="temperature",
+            name="Temperature",
+            icon="mdi:thermometer"
+        ))
 
     @property
     def hvac_mode(self) -> HVACMode | str | None:

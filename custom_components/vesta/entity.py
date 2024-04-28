@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import VestaCoordinator
@@ -19,11 +19,15 @@ class VestaEntity(CoordinatorEntity[VestaCoordinator]):
         coordinator: VestaCoordinator,
         config_entry: ConfigEntry,
         device: GizwitsDevice,
+        entity_description: EntityDescription
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         self.config_entry = config_entry
         self.device = device
+        self.entity_description = entity_description
+        self._attr_name = entity_description.name
+        self._attr_unique_id = f"{device.device_id}_{entity_description.key}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -48,7 +52,3 @@ class VestaEntity(CoordinatorEntity[VestaCoordinator]):
         """Return True if entity is available."""
         return self.device.is_online
 
-    @property
-    def name(self):
-        """Name of the entity."""
-        return self.vesta_device.alias

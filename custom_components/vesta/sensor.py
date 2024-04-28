@@ -2,149 +2,109 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
-
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 
-from . import VestaUpdateCoordinator
-from .vesta.model import VestaDevice, VestaDeviceType
-from .const import DOMAIN, Icon
+from . import VestaCoordinator
+from .const import DOMAIN
 from .entity import VestaEntity
-
-
-@dataclass
-class DeviceSensorDescription:
-    """An entity description with a function that describes how to derive a value."""
-
-    entity_description: SensorEntityDescription
-    value_fn: Callable[[VestaDevice], StateType]
+from .pygizwits import GizwitsDevice
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add sensors for passed config_entry in HA."""
-    coordinator: VestaUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up sensor entities."""
+    coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+
     entities: list[VestaEntity] = []
 
-    for device_id, device_info in coordinator.api.devices.items():
-        name_prefix = "Vesta"
-        if device_info.device_type in [
-            VestaDeviceType.AIRJET_SPA,
-            VestaDeviceType.HYDROJET_SPA,
-            VestaDeviceType.HYDROJET_PRO_SPA,
-        ]:
-            name_prefix = "Spa"
-        elif device_info.device_type == VestaDeviceType.POOL_FILTER:
-            name_prefix = "Pool Filter"
-
+    for device_id, device in coordinator.device_manager.devices.items():
         entities.extend(
             [
-                DeviceSensor(
-                    coordinator,
-                    config_entry,
-                    device_id,
-                    sensor_description=DeviceSensorDescription(
-                        SensorEntityDescription(
-                            key="protocol_version",
-                            name=f"{name_prefix} Protocol Version",
-                            icon=Icon.PROTOCOL,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                        ),
-                        lambda device: device.protocol_version,
-                    ),
-                ),
-                DeviceSensor(
-                    coordinator,
-                    config_entry,
-                    device_id,
-                    sensor_description=DeviceSensorDescription(
-                        SensorEntityDescription(
-                            key="mcu_soft_version",
-                            name=f"{name_prefix} MCU Software Version",
-                            icon=Icon.SOFTWARE,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                        ),
-                        lambda device: device.mcu_soft_version,
-                    ),
-                ),
-                DeviceSensor(
-                    coordinator,
-                    config_entry,
-                    device_id,
-                    sensor_description=DeviceSensorDescription(
-                        SensorEntityDescription(
-                            key="mcu_hard_version",
-                            name=f"{name_prefix} MCU Hardware Version",
-                            icon=Icon.HARDWARE,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                        ),
-                        lambda device: device.mcu_hard_version,
-                    ),
-                ),
-                DeviceSensor(
-                    coordinator,
-                    config_entry,
-                    device_id,
-                    sensor_description=DeviceSensorDescription(
-                        SensorEntityDescription(
-                            key="wifi_soft_version",
-                            name=f"{name_prefix} Wi-Fi Software Version",
-                            icon=Icon.SOFTWARE,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                        ),
-                        lambda device: device.wifi_soft_version,
-                    ),
-                ),
-                DeviceSensor(
-                    coordinator,
-                    config_entry,
-                    device_id,
-                    sensor_description=DeviceSensorDescription(
-                        SensorEntityDescription(
-                            key="wifi_hard_version",
-                            name=f"{name_prefix} Wi-Fi Hardware Version",
-                            icon=Icon.HARDWARE,
-                            entity_category=EntityCategory.DIAGNOSTIC,
-                        ),
-                        lambda device: device.wifi_hard_version,
-                    ),
-                ),
+                VestaRunningTime(coordinator, config_entry, device),
+                VestaRemainingTime(coordinator, config_entry, device),
             ]
         )
-
     async_add_entities(entities)
 
 
-class DeviceSensor(VestaEntity, SensorEntity):
+class VestaRunningTime(VestaEntity, SensorEntity):
     """A sensor based on device metadata."""
-
-    sensor_description: DeviceSensorDescription
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    should_poll = False
 
     def __init__(
-        self,
-        coordinator: VestaUpdateCoordinator,
-        config_entry: ConfigEntry,
-        device_id: str,
-        sensor_description: DeviceSensorDescription,
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
     ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator, config_entry, device_id)
-        self.sensor_description = sensor_description
-        self.entity_description = sensor_description.entity_description
-        self._attr_unique_id = f"{device_id}_{self.entity_description.key}"
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, SensorEntityDescription(
+            key="running_time",
+            name="Running time",
+            icon="mdi:timeline-clock-outline"
+        ))
 
     @property
-    def native_value(self) -> StateType:
-        """Return the relevant property."""
-        if (device := self.vesta_device) is not None:
-            return self.sensor_description.value_fn(device)
-        return None
+    def native_value(self) -> float | None:
+        """Return the state of the sensor."""
+        if not self.status:
+            return None
+        return self.device.attributes["runnning_time_hour"] * 60 + self.device.attributes["runnning_time_min"]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, int] | None:
+        """Return the state attributes of the last update."""
+        if not self.status:
+            return None
+
+        return {
+            "runnning_time_hour": self.device.attributes["runnning_time_hour"],
+            "runnning_time_min": self.device.attributes["runnning_time_min"]
+        }
+
+
+class VestaRemainingTime(VestaEntity, SensorEntity):
+    """A sensor based on device metadata."""
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    should_poll = False
+
+    def __init__(
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
+    ) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, SensorEntityDescription(
+            key="remaining_time",
+            name="Remaining time",
+            icon="mdi:progress-clock"
+        ))
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the state of the sensor."""
+        if not self.status:
+            return None
+        return self.device.attributes["remaining_time_hour"] * 60 + self.device.attributes["remaining_time_min"]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, int] | None:
+        """Return the state attributes of the last update."""
+        if not self.status:
+            return None
+
+        return {
+            "remaining_time_hour": self.device.attributes["remaining_time_hour"],
+            "remaining_time_min": self.device.attributes["remaining_time_min"]
+        }

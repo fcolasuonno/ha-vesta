@@ -1,6 +1,5 @@
 import asyncio
 import json
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, cast
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
@@ -162,12 +161,6 @@ class WebsocketConnection:
         """
         try:
             data = json.loads(message)
-            current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f")
-            filename = f"data_{current_time}.json"
-
-            # Write the data to a JSON file
-            with open(filename, 'w') as file:
-                json.dump(data, file, indent=4)
 
             cmd = data.get('cmd')
             data = data.get('data')
