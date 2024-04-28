@@ -1,0 +1,15 @@
+{
+  "domain": "vesta",
+  "name": "Vesta",
+  "codeowners": [
+    "@fcolasuonno"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/fcolasuonno/ha-vesta",
+  "integration_type": "device",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/fcolasuonno/ha-vesta/issues",
+  "requirements": [],
+  "version": "0.0.1"
+}

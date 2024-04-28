@@ -10,17 +10,17 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.bestway.bestway.api import BestwayApi
+from custom_components.vesta.vesta.api import VestaApi
 
-from . import BestwayUpdateCoordinator
-from .bestway.model import (
+from . import VestaUpdateCoordinator
+from .vesta.model import (
     AIRJET_V01_BUBBLES_MAP,
     HYDROJET_BUBBLES_MAP,
-    BestwayDeviceType,
+    VestaDeviceType,
     BubblesLevel,
 )
 from .const import DOMAIN, Icon
-from .entity import BestwayEntity
+from .entity import VestaEntity
 
 _BUBBLES_OPTIONS = {
     BubblesLevel.OFF: "OFF",
@@ -33,7 +33,7 @@ _BUBBLES_OPTIONS = {
 class BubblesRequiredKeys:
     """Mixin for required keys."""
 
-    set_fn: Callable[[BestwayApi, str, BubblesLevel], Awaitable[None]]
+    set_fn: Callable[[VestaApi, str, BubblesLevel], Awaitable[None]]
     get_fn: Callable[[int], BubblesLevel]
 
 
@@ -69,11 +69,11 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up select entities."""
-    coordinator: BestwayUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    entities: list[BestwayEntity] = []
+    coordinator: VestaUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    entities: list[VestaEntity] = []
 
     for device_id, device in coordinator.api.devices.items():
-        if device.device_type == BestwayDeviceType.AIRJET_V01_SPA:
+        if device.device_type == VestaDeviceType.AIRJET_V01_SPA:
             entities.append(
                 ThreeWaySpaBubblesSelect(
                     coordinator,
@@ -84,8 +84,8 @@ async def async_setup_entry(
             )
 
         if device.device_type in [
-            BestwayDeviceType.HYDROJET_SPA,
-            BestwayDeviceType.HYDROJET_PRO_SPA,
+            VestaDeviceType.HYDROJET_SPA,
+            VestaDeviceType.HYDROJET_PRO_SPA,
         ]:
             entities.append(
                 ThreeWaySpaBubblesSelect(
@@ -99,14 +99,14 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class ThreeWaySpaBubblesSelect(BestwayEntity, SelectEntity):
+class ThreeWaySpaBubblesSelect(VestaEntity, SelectEntity):
     """Bubbles selection for spa devices that support 3 levels."""
 
     entity_description: BubblesSelectEntityDescription
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
         description: BubblesSelectEntityDescription,

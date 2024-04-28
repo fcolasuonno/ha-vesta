@@ -1,6 +1,6 @@
 {
 	"image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
-	"name": "bestway",
+	"name": "vesta",
 	"appPort": [
 		"9125:8123"
 	],

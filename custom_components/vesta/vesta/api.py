@@ -1,4 +1,4 @@
-"""Bestway API."""
+"""Vesta API."""
 
 import asyncio
 from dataclasses import dataclass
@@ -13,10 +13,10 @@ from aiohttp import ClientResponse, ClientSession
 from .model import (
     AIRJET_V01_BUBBLES_MAP,
     HYDROJET_BUBBLES_MAP,
-    BestwayDevice,
-    BestwayDeviceStatus,
-    BestwayDeviceType,
-    BestwayUserToken,
+    VestaDevice,
+    VestaDeviceStatus,
+    VestaDeviceType,
+    VestaUserToken,
     BubblesLevel,
     HydrojetFilter,
     HydrojetHeat,
@@ -24,24 +24,26 @@ from .model import (
 
 _LOGGER = getLogger(__name__)
 _HEADERS = {
-    "Content-type": "application/json; charset=UTF-8",
-    "X-Gizwits-Application-Id": "98754e684ec045528b073876c34c7348",
+    "Content-type": "application/json",
+    "X-Gizwits-Application-Id": "9a6d8b3d46a246fca38dea306f98e19e",
+    "User-Agent": "GizWifiSDK (v18.21071915)",
+    "language": "zh-CN"
 }
 _TIMEOUT = 10
 
 
 @dataclass
-class BestwayApiResults:
+class VestaApiResults:
     """A snapshot of device status reports returned from the API."""
 
-    devices: dict[str, BestwayDeviceStatus]
+    devices: dict[str, VestaDeviceStatus]
 
 
-class BestwayException(Exception):
+class VestaException(Exception):
     """An exception while using the API."""
 
 
-class BestwayOfflineException(BestwayException):
+class VestaOfflineException(VestaException):
     """Device is offline."""
 
     def __init__(self) -> None:
@@ -49,19 +51,19 @@ class BestwayOfflineException(BestwayException):
         super().__init__("Device is offline")
 
 
-class BestwayAuthException(BestwayException):
+class VestaAuthException(VestaException):
     """An authentication error."""
 
 
-class BestwayTokenInvalidException(BestwayAuthException):
+class VestaTokenInvalidException(VestaAuthException):
     """Auth token is invalid or expired."""
 
 
-class BestwayUserDoesNotExistException(BestwayAuthException):
+class VestaUserDoesNotExistException(VestaAuthException):
     """User does not exist."""
 
 
-class BestwayIncorrectPasswordException(BestwayAuthException):
+class VestaIncorrectPasswordException(VestaAuthException):
     """Password is incorrect."""
 
 
@@ -70,7 +72,7 @@ async def _raise_for_status(response: ClientResponse) -> None:
     if response.ok:
         return
 
-    # Try to parse out the bestway error code
+    # Try to parse out the Vesta error code
     try:
         api_error = await response.json()
     except Exception:  # pylint: disable=broad-except
@@ -78,20 +80,20 @@ async def _raise_for_status(response: ClientResponse) -> None:
 
     error_code = api_error.get("error_code", 0)
     if error_code == 9004:
-        raise BestwayTokenInvalidException()
+        raise VestaTokenInvalidException()
     if error_code == 9005:
-        raise BestwayUserDoesNotExistException()
+        raise VestaUserDoesNotExistException()
     if error_code == 9042:
-        raise BestwayOfflineException()
+        raise VestaOfflineException()
     if error_code == 9020:
-        raise BestwayIncorrectPasswordException()
+        raise VestaIncorrectPasswordException()
 
     # If we don't understand the error code, provide more detail for debugging
     response.raise_for_status()
 
 
-class BestwayApi:
-    """Bestway API."""
+class VestaApi:
+    """Vesta API."""
 
     def __init__(self, session: ClientSession, user_token: str, api_root: str) -> None:
         """Initialize the API with a user token."""
@@ -100,7 +102,7 @@ class BestwayApi:
         self._api_root = api_root
 
         # Maps device IDs to device info
-        self.devices: dict[str, BestwayDevice] = {}
+        self.devices: dict[str, VestaDevice] = {}
 
         # Cache containing state information for each device received from the API
         # This is used to work around an annoyance where changes to settings via
@@ -109,12 +111,12 @@ class BestwayApi:
         # When updating state via HA, we update the cache and return this value
         # until the API can provide us with a response containing a timestamp
         # more recent than the local update.
-        self._state_cache: dict[str, BestwayDeviceStatus] = {}
+        self._state_cache: dict[str, VestaDeviceStatus] = {}
 
     @staticmethod
     async def get_user_token(
-        session: ClientSession, username: str, password: str, api_root: str
-    ) -> BestwayUserToken:
+            session: ClientSession, username: str, password: str, api_root: str
+    ) -> VestaUserToken:
         """
         Login and obtain a user token.
 
@@ -129,7 +131,7 @@ class BestwayApi:
             await _raise_for_status(response)
             api_data = await response.json()
 
-        return BestwayUserToken(
+        return VestaUserToken(
             api_data["uid"], api_data["token"], api_data["expire_at"]
         )
 
@@ -139,25 +141,49 @@ class BestwayApi:
             device.device_id: device for device in await self._get_devices()
         }
 
-    async def _get_devices(self) -> list[BestwayDevice]:
+    async def _get_devices(self) -> list[VestaDevice]:
         """Get the list of devices available in the account."""
         api_data = await self._do_get(f"{self._api_root}/app/bindings")
+        # {'protoc': 3,
+        # 'ws_port': 8080,
+        # 'port_s': 8883,
+        # 'gw_did': None,
+        # 'host': 'ussandbox.gizwits.com',
+        # 'sleep_duration': 0,
+        # 'port': 1883,
+        # 'product_key': '3db0c479df0a4df78948a1771489f493',
+        # 'state_last_timestamp': 1713558391,
+        # 'role': 'special',
+        # 'is_sandbox': True,
+        # 'type': 'normal',
+        # 'product_name': 'SousVideCooker',
+        # 'is_disabled': False,
+        #            'dev_alias': 'Souuuuus vide ',
+        # 'mesh_id': None,
+        # 'is_online': False,
+        # 'dev_label': [],
+        # 'wss_port': 8880,
+        # 'remark': '',
+        #             'did': 'hfVgPNuSnBkZhdpM4JeyM6',
+        # 'mac': 'f0fe6bf91480',
+        # 'passcode': 'PFDBGXHUYW',
+        # 'is_low_power': False}
         return [
-            BestwayDevice(
-                raw["protoc"],
-                raw["did"],
-                raw["product_name"],
-                raw["dev_alias"],
-                raw["mcu_soft_version"],
-                raw["mcu_hard_version"],
-                raw["wifi_soft_version"],
-                raw["wifi_hard_version"],
-                raw["is_online"],
+            VestaDevice(
+                protocol_version=raw["protoc"],
+                device_id=raw["did"],
+                product_name=raw["product_name"],
+                alias=raw["dev_alias"],
+                mcu_soft_version=raw["mcu_soft_version"],
+                mcu_hard_version=raw["mcu_hard_version"],
+                wifi_soft_version=raw["wifi_soft_version"],
+                wifi_hard_version=raw["wifi_hard_version"],
+                is_online=raw["is_online"],
             )
             for raw in api_data["devices"]
         ]
 
-    async def fetch_data(self) -> BestwayApiResults:
+    async def fetch_data(self) -> VestaApiResults:
         """Fetch the latest data for all devices."""
         for did, device_info in self.devices.items():
             latest_data = await self._do_get(
@@ -177,7 +203,7 @@ class BestwayApi:
             # Work out whether the received API update is more recent than the
             # locally cached state
             local_update_timestamp = 0
-            cached_state: BestwayDeviceStatus | None
+            cached_state: VestaDeviceStatus | None
             if cached_state := self._state_cache.get(did):
                 local_update_timestamp = cached_state.timestamp
 
@@ -190,13 +216,13 @@ class BestwayApi:
 
             _LOGGER.debug("New data received for device %s", did)
             device_attrs = latest_data["attr"]
-            self._state_cache[did] = BestwayDeviceStatus(
+            self._state_cache[did] = VestaDeviceStatus(
                 latest_data["updated_at"], device_attrs
             )
 
             attr_dump = json.dumps(device_attrs)
 
-            if device_info.device_type == BestwayDeviceType.UNKNOWN:
+            if device_info.device_type == VestaDeviceType.UNKNOWN:
                 _LOGGER.warning(
                     "Status for unknown device type '%s' returned: %s",
                     device_info.product_name,
@@ -209,12 +235,12 @@ class BestwayApi:
                     attr_dump,
                 )
 
-        return BestwayApiResults(self._state_cache)
+        return VestaApiResults(self._state_cache)
 
     async def airjet_spa_set_power(self, device_id: str, power: bool) -> None:
         """Turn the spa on/off."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = 1 if power else 0
         _LOGGER.debug("Setting power to %s", "ON" if power else "OFF")
@@ -230,7 +256,7 @@ class BestwayApi:
     async def airjet_spa_set_filter(self, device_id: str, filtering: bool) -> None:
         """Turn the filter pump on/off on a spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = 1 if filtering else 0
         _LOGGER.debug("Setting filter mode to %s", "ON" if filtering else "OFF")
@@ -250,7 +276,7 @@ class BestwayApi:
         Turning the heater on will also turn on the filter pump.
         """
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = 1 if heat else 0
         _LOGGER.debug("Setting heater mode to %s", "ON" if heat else "OFF")
@@ -262,11 +288,11 @@ class BestwayApi:
             cached_state.attrs["filter_power"] = 1
 
     async def airjet_spa_set_target_temp(
-        self, device_id: str, target_temp: int
+            self, device_id: str, target_temp: int
     ) -> None:
         """Set the target temperature on a spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         target_temp = int(target_temp)
         _LOGGER.debug("Setting target temperature to %d", target_temp)
@@ -277,7 +303,7 @@ class BestwayApi:
     async def airjet_spa_set_locked(self, device_id: str, locked: bool) -> None:
         """Lock or unlock the physical control panel on a spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = 1 if locked else 0
         _LOGGER.debug("Setting lock state to %s", "ON" if locked else "OFF")
@@ -288,7 +314,7 @@ class BestwayApi:
     async def airjet_spa_set_bubbles(self, device_id: str, bubbles: bool) -> None:
         """Turn the bubbles on/off on an Airjet spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         _LOGGER.debug("Setting bubbles mode to %s", "ON" if bubbles else "OFF")
         await self._do_control_post(device_id, wave_power=1 if bubbles else 0)
@@ -298,11 +324,11 @@ class BestwayApi:
             cached_state.attrs["spa_power"] = 1
 
     async def airjet_v01_spa_set_bubbles(
-        self, device_id: str, bubbles: BubblesLevel
+            self, device_id: str, bubbles: BubblesLevel
     ) -> None:
         """Control the bubbles on an Airjet V01 spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = AIRJET_V01_BUBBLES_MAP.to_api_value(bubbles)
         _LOGGER.debug("Setting bubbles mode to %d", api_value)
@@ -315,7 +341,7 @@ class BestwayApi:
     async def hydrojet_spa_set_power(self, device_id: str, power: bool) -> None:
         """Turn the spa on/off."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         _LOGGER.debug("Setting power to %s", "ON" if power else "OFF")
         await self._do_control_post(device_id, power=1 if power else 0)
@@ -328,11 +354,11 @@ class BestwayApi:
             cached_state.attrs["wave"] = HYDROJET_BUBBLES_MAP.off_val
 
     async def hydrojet_spa_set_filter(
-        self, device_id: str, filtering: HydrojetFilter
+            self, device_id: str, filtering: HydrojetFilter
     ) -> None:
         """Turn the filter pump on/off on a spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         _LOGGER.debug("Setting filter mode to %s", "ON" if filtering else "OFF")
         await self._do_control_post(device_id, filter=filtering)
@@ -351,7 +377,7 @@ class BestwayApi:
         Turning the heater on will also turn on the filter pump.
         """
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         _LOGGER.debug("Setting heater mode to %s", "ON" if heat else "OFF")
         await self._do_control_post(device_id, heat=heat)
@@ -362,11 +388,11 @@ class BestwayApi:
             cached_state.attrs["filter"] = HydrojetFilter.ON
 
     async def hydrojet_spa_set_target_temp(
-        self, device_id: str, target_temp: int
+            self, device_id: str, target_temp: int
     ) -> None:
         """Set the target temperature on a Hydrojet spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         target_temp = int(target_temp)
         _LOGGER.debug("Setting target temperature to %d", target_temp)
@@ -375,11 +401,11 @@ class BestwayApi:
         cached_state.attrs["Tset"] = target_temp
 
     async def hydrojet_spa_set_bubbles(
-        self, device_id: str, bubbles: BubblesLevel
+            self, device_id: str, bubbles: BubblesLevel
     ) -> None:
         """Control the bubbles on a Hydrojet spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = HYDROJET_BUBBLES_MAP.to_api_value(bubbles)
         _LOGGER.debug("Setting bubbles mode to %d", api_value)
@@ -392,7 +418,7 @@ class BestwayApi:
     async def hydrojet_spa_set_jets(self, device_id: str, jets: bool) -> None:
         """Control the jets on a Hydrojet spa device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         api_value = 1 if jets else 0
         _LOGGER.debug("Setting jets to %s", "ON" if jets else "OFF")
@@ -405,7 +431,7 @@ class BestwayApi:
     async def pool_filter_set_power(self, device_id: str, power: bool) -> None:
         """Control power to a pump device."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         _LOGGER.debug("Setting power to %s", "ON" if power else "OFF")
         await self._do_control_post(device_id, power=1 if power else 0)
@@ -415,7 +441,7 @@ class BestwayApi:
     async def pool_filter_set_time(self, device_id: str, hours: int) -> None:
         """Set filter timeout for for pool devices."""
         if (cached_state := self._state_cache.get(device_id)) is None:
-            raise BestwayException(f"Device '{device_id}' is not recognised")
+            raise VestaException(f"Device '{device_id}' is not recognised")
 
         _LOGGER.debug("Setting filter timeout to %d hours", hours)
         await self._do_control_post(device_id, time=hours)
@@ -437,7 +463,7 @@ class BestwayApi:
             return response_json
 
     async def _do_control_post(
-        self, device_id: str, **kwargs: int | str
+            self, device_id: str, **kwargs: int | str
     ) -> dict[str, Any]:
         return await self._do_post(
             f"{self._api_root}/app/control/{device_id}",

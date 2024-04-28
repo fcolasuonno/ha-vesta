@@ -16,10 +16,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import BestwayUpdateCoordinator
-from .bestway.model import BestwayDeviceType
+from . import VestaUpdateCoordinator
+from .vesta.model import VestaDeviceType
 from .const import DOMAIN, Icon
-from .entity import BestwayEntity
+from .entity import VestaEntity
 
 _SPA_CONNECTIVITY_SENSOR_DESCRIPTION = BinarySensorEntityDescription(
     key="spa_connected",
@@ -60,8 +60,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up binary sensor entities."""
-    coordinator: BestwayUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    entities: list[BestwayEntity] = []
+    coordinator: VestaUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    entities: list[VestaEntity] = []
 
     for device_id, device in coordinator.api.devices.items():
         # All devices support the connectivity sensor
@@ -74,10 +74,10 @@ async def async_setup_entry(
             )
         )
 
-        if device.device_type == BestwayDeviceType.AIRJET_SPA:
+        if device.device_type == VestaDeviceType.AIRJET_SPA:
             entities.append(AirjetSpaErrorsSensor(coordinator, config_entry, device_id))
 
-        if device.device_type == BestwayDeviceType.POOL_FILTER:
+        if device.device_type == VestaDeviceType.POOL_FILTER:
             entities.extend(
                 [
                     PoolFilterChangeRequiredSensor(
@@ -90,12 +90,12 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DeviceConnectivitySensor(BestwayEntity, BinarySensorEntity):
+class DeviceConnectivitySensor(VestaEntity, BinarySensorEntity):
     """Sensor to indicate whether a device is currently online."""
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
         entity_description: BinarySensorEntityDescription,
@@ -113,7 +113,7 @@ class DeviceConnectivitySensor(BestwayEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if the spa is online."""
-        return self.bestway_device is not None and self.bestway_device.is_online
+        return self.vesta_device is not None and self.vesta_device.is_online
 
     @property
     def available(self) -> bool:
@@ -121,12 +121,12 @@ class DeviceConnectivitySensor(BestwayEntity, BinarySensorEntity):
         return True
 
 
-class AirjetSpaErrorsSensor(BestwayEntity, BinarySensorEntity):
+class AirjetSpaErrorsSensor(VestaEntity, BinarySensorEntity):
     """Sensor to indicate an error state for an Airjet spa."""
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
     ) -> None:
@@ -173,12 +173,12 @@ class AirjetSpaErrorsSensor(BestwayEntity, BinarySensorEntity):
         }
 
 
-class PoolFilterChangeRequiredSensor(BestwayEntity, BinarySensorEntity):
+class PoolFilterChangeRequiredSensor(VestaEntity, BinarySensorEntity):
     """Sensor to indicate whether a pool filter requires a change."""
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
     ) -> None:
@@ -198,12 +198,12 @@ class PoolFilterChangeRequiredSensor(BestwayEntity, BinarySensorEntity):
         return self.status is not None and self.status.attrs["filter"]
 
 
-class PoolFilterErrorSensor(BestwayEntity, BinarySensorEntity):
+class PoolFilterErrorSensor(VestaEntity, BinarySensorEntity):
     """Sensor to indicate an error state for a pool filter."""
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
     ) -> None:

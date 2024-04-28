@@ -1,3 +1,4 @@
 homeassistant
 pre-commit
 mypy
+aiohttp

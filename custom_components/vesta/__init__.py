@@ -1,4 +1,4 @@
-"""The bestway integration."""
+"""The Vesta integration."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .bestway.api import BestwayApi
+from .vesta.api import VestaApi
 from .const import (
     CONF_API_ROOT,
     CONF_API_ROOT_EU,
@@ -21,7 +21,7 @@ from .const import (
     CONF_USERNAME,
     DOMAIN,
 )
-from .coordinator import BestwayUpdateCoordinator
+from .coordinator import VestaUpdateCoordinator
 
 _LOGGER = getLogger(__name__)
 _PLATFORMS: list[Platform] = [
@@ -35,7 +35,7 @@ _PLATFORMS: list[Platform] = [
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up bestway from a config entry."""
+    """Set up Vesta from a config entry."""
     username = entry.data.get(CONF_USERNAME)
     password = entry.data.get(CONF_PASSWORD)
     api_root = entry.data.get(CONF_API_ROOT)
@@ -53,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     else:
         _LOGGER.info("Requesting a new auth token")
         try:
-            token = await BestwayApi.get_user_token(
+            token = await VestaApi.get_user_token(
                 session, username, password, api_root
             )
         except Exception as ex:  # pylint: disable=broad-except
@@ -71,8 +71,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entry, data={**entry.data, **new_config_data}
         )
 
-    api = BestwayApi(session, user_token, api_root)
-    coordinator = BestwayUpdateCoordinator(hass, api)
+    api = VestaApi(session, user_token, api_root)
+    coordinator = VestaUpdateCoordinator(hass, api)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

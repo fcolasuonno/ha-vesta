@@ -1,8 +1,8 @@
-"""Constants for the bestway integration."""
+"""Constants for the vesta integration."""
 
 from enum import Enum
 
-DOMAIN = "bestway"
+DOMAIN = "vesta"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_API_ROOT = "apiroot"

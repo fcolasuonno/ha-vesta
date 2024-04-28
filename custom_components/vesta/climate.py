@@ -11,10 +11,10 @@ from homeassistant.const import ATTR_TEMPERATURE, PRECISION_WHOLE, UnitOfTempera
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import BestwayUpdateCoordinator
-from .bestway.model import BestwayDeviceType, HydrojetHeat
+from . import VestaUpdateCoordinator
+from .vesta.model import VestaDeviceType, HydrojetHeat
 from .const import DOMAIN
-from .entity import BestwayEntity
+from .entity import VestaEntity
 
 _SPA_MIN_TEMP_C = 20
 _SPA_MIN_TEMP_F = 68
@@ -33,18 +33,18 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up climate entities."""
-    coordinator: BestwayUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: VestaUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    entities: list[BestwayEntity] = []
+    entities: list[VestaEntity] = []
 
     for device_id, device in coordinator.api.devices.items():
-        if device.device_type == BestwayDeviceType.AIRJET_SPA:
+        if device.device_type == VestaDeviceType.AIRJET_SPA:
             entities.append(AirjetSpaThermostat(coordinator, config_entry, device_id))
 
         if device.device_type in [
-            BestwayDeviceType.AIRJET_V01_SPA,
-            BestwayDeviceType.HYDROJET_SPA,
-            BestwayDeviceType.HYDROJET_PRO_SPA,
+            VestaDeviceType.AIRJET_V01_SPA,
+            VestaDeviceType.HYDROJET_SPA,
+            VestaDeviceType.HYDROJET_PRO_SPA,
         ]:
             entities.append(
                 AirjetV01HydrojetSpaThermostat(coordinator, config_entry, device_id)
@@ -53,7 +53,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class AirjetSpaThermostat(BestwayEntity, ClimateEntity):
+class AirjetSpaThermostat(VestaEntity, ClimateEntity):
     """A thermostat that works for Airjet spa devices."""
 
     _attr_name = "Spa Thermostat"
@@ -65,7 +65,7 @@ class AirjetSpaThermostat(BestwayEntity, ClimateEntity):
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
     ) -> None:
@@ -161,7 +161,7 @@ class AirjetSpaThermostat(BestwayEntity, ClimateEntity):
         await self.coordinator.async_refresh()
 
 
-class AirjetV01HydrojetSpaThermostat(BestwayEntity, ClimateEntity):
+class AirjetV01HydrojetSpaThermostat(VestaEntity, ClimateEntity):
     """A thermostat that works for Airjet_V01 and Hydrojet devices."""
 
     _attr_name = "Spa Thermostat"
@@ -173,7 +173,7 @@ class AirjetV01HydrojetSpaThermostat(BestwayEntity, ClimateEntity):
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
     ) -> None:

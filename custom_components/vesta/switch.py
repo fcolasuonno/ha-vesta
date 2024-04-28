@@ -12,28 +12,28 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import BestwayUpdateCoordinator
-from .bestway.api import BestwayApi
-from .bestway.model import BestwayDeviceStatus, BestwayDeviceType, HydrojetFilter
+from . import VestaUpdateCoordinator
+from .vesta.api import VestaApi
+from .vesta.model import VestaDeviceStatus, VestaDeviceType, HydrojetFilter
 from .const import DOMAIN, Icon
-from .entity import BestwayEntity
+from .entity import VestaEntity
 
 
 @dataclass(frozen=True)
 class SwitchFunctionsMixin:
     """Functions for spa devices."""
 
-    value_fn: Callable[[BestwayDeviceStatus], bool]
-    turn_on_fn: Callable[[BestwayApi, str], Awaitable[None]]
-    turn_off_fn: Callable[[BestwayApi, str], Awaitable[None]]
+    value_fn: Callable[[VestaDeviceStatus], bool]
+    turn_on_fn: Callable[[VestaApi, str], Awaitable[None]]
+    turn_off_fn: Callable[[VestaApi, str], Awaitable[None]]
 
 
 @dataclass(frozen=True)
-class BestwaySwitchEntityDescription(SwitchEntityDescription, SwitchFunctionsMixin):
-    """Entity description for bestway spa switches."""
+class VestaSwitchEntityDescription(SwitchEntityDescription, SwitchFunctionsMixin):
+    """Entity description for vesta spa switches."""
 
 
-_AIRJET_SPA_POWER_SWITCH = BestwaySwitchEntityDescription(
+_AIRJET_SPA_POWER_SWITCH = VestaSwitchEntityDescription(
     key="spa_power",
     name="Spa Power",
     icon=Icon.POWER,
@@ -42,7 +42,7 @@ _AIRJET_SPA_POWER_SWITCH = BestwaySwitchEntityDescription(
     turn_off_fn=lambda api, device_id: api.airjet_spa_set_power(device_id, False),
 )
 
-_AIRJET_SPA_FILTER_SWITCH = BestwaySwitchEntityDescription(
+_AIRJET_SPA_FILTER_SWITCH = VestaSwitchEntityDescription(
     key="spa_filter_power",
     name="Spa Filter",
     icon=Icon.FILTER,
@@ -51,7 +51,7 @@ _AIRJET_SPA_FILTER_SWITCH = BestwaySwitchEntityDescription(
     turn_off_fn=lambda api, device_id: api.airjet_spa_set_filter(device_id, False),
 )
 
-_AIRJET_SPA_BUBBLES_SWITCH = BestwaySwitchEntityDescription(
+_AIRJET_SPA_BUBBLES_SWITCH = VestaSwitchEntityDescription(
     key="spa_wave_power",
     name="Spa Bubbles",
     icon=Icon.BUBBLES,
@@ -60,7 +60,7 @@ _AIRJET_SPA_BUBBLES_SWITCH = BestwaySwitchEntityDescription(
     turn_off_fn=lambda api, device_id: api.airjet_spa_set_bubbles(device_id, False),
 )
 
-_AIRJET_SPA_LOCK_SWITCH = BestwaySwitchEntityDescription(
+_AIRJET_SPA_LOCK_SWITCH = VestaSwitchEntityDescription(
     key="spa_locked",
     name="Spa Locked",
     icon=Icon.LOCK,
@@ -69,7 +69,7 @@ _AIRJET_SPA_LOCK_SWITCH = BestwaySwitchEntityDescription(
     turn_off_fn=lambda api, device_id: api.airjet_spa_set_locked(device_id, False),
 )
 
-_AIRJET_V01_HYDROJET_SPA_POWER_SWITCH = BestwaySwitchEntityDescription(
+_AIRJET_V01_HYDROJET_SPA_POWER_SWITCH = VestaSwitchEntityDescription(
     key="spa_power",
     name="Spa Power",
     icon=Icon.POWER,
@@ -78,7 +78,7 @@ _AIRJET_V01_HYDROJET_SPA_POWER_SWITCH = BestwaySwitchEntityDescription(
     turn_off_fn=lambda api, device_id: api.hydrojet_spa_set_power(device_id, False),
 )
 
-_AIRJET_V01_HYDROJET_SPA_FILTER_SWITCH = BestwaySwitchEntityDescription(
+_AIRJET_V01_HYDROJET_SPA_FILTER_SWITCH = VestaSwitchEntityDescription(
     key="spa_filter_power",
     name="Spa Filter",
     icon=Icon.FILTER,
@@ -91,7 +91,7 @@ _AIRJET_V01_HYDROJET_SPA_FILTER_SWITCH = BestwaySwitchEntityDescription(
     ),
 )
 
-_HYDROJET_SPA_JETS_SWITCH = BestwaySwitchEntityDescription(
+_HYDROJET_SPA_JETS_SWITCH = VestaSwitchEntityDescription(
     key="spa_jets",
     name="Spa Jets",
     icon=Icon.JETS,
@@ -100,7 +100,7 @@ _HYDROJET_SPA_JETS_SWITCH = BestwaySwitchEntityDescription(
     turn_off_fn=lambda api, device_id: api.hydrojet_spa_set_jets(device_id, False),
 )
 
-_POOL_FILTER_POWER_SWITCH = BestwaySwitchEntityDescription(
+_POOL_FILTER_POWER_SWITCH = VestaSwitchEntityDescription(
     key="pool_filter_power",
     name="Pool Filter Power",
     icon=Icon.FILTER,
@@ -116,30 +116,30 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up switch entities."""
-    coordinator: BestwayUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: VestaUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    entities: list[BestwayEntity] = []
+    entities: list[VestaEntity] = []
 
     for device_id, device in coordinator.api.devices.items():
-        if device.device_type == BestwayDeviceType.AIRJET_SPA:
+        if device.device_type == VestaDeviceType.AIRJET_SPA:
             entities.extend(
                 [
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator, config_entry, device_id, _AIRJET_SPA_POWER_SWITCH
                     ),
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
                         _AIRJET_SPA_FILTER_SWITCH,
                     ),
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
                         _AIRJET_SPA_BUBBLES_SWITCH,
                     ),
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
@@ -148,16 +148,16 @@ async def async_setup_entry(
                 ]
             )
 
-        if device.device_type == BestwayDeviceType.AIRJET_V01_SPA:
+        if device.device_type == VestaDeviceType.AIRJET_V01_SPA:
             entities.extend(
                 [
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
                         _AIRJET_V01_HYDROJET_SPA_POWER_SWITCH,
                     ),
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
@@ -167,24 +167,24 @@ async def async_setup_entry(
             )
 
         if device.device_type in [
-            BestwayDeviceType.HYDROJET_SPA,
-            BestwayDeviceType.HYDROJET_PRO_SPA,
+            VestaDeviceType.HYDROJET_SPA,
+            VestaDeviceType.HYDROJET_PRO_SPA,
         ]:
             entities.extend(
                 [
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
                         _AIRJET_V01_HYDROJET_SPA_POWER_SWITCH,
                     ),
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
                         _AIRJET_V01_HYDROJET_SPA_FILTER_SWITCH,
                     ),
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator,
                         config_entry,
                         device_id,
@@ -193,10 +193,10 @@ async def async_setup_entry(
                 ]
             )
 
-        if device.device_type == BestwayDeviceType.POOL_FILTER:
+        if device.device_type == VestaDeviceType.POOL_FILTER:
             entities.extend(
                 [
-                    BestwaySwitch(
+                    VestaSwitch(
                         coordinator, config_entry, device_id, _POOL_FILTER_POWER_SWITCH
                     )
                 ]
@@ -205,17 +205,17 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class BestwaySwitch(BestwayEntity, SwitchEntity):
-    """Bestway switch entity."""
+class VestaSwitch(VestaEntity, SwitchEntity):
+    """Vesta switch entity."""
 
-    entity_description: BestwaySwitchEntityDescription
+    entity_description: VestaSwitchEntityDescription
 
     def __init__(
         self,
-        coordinator: BestwayUpdateCoordinator,
+        coordinator: VestaUpdateCoordinator,
         config_entry: ConfigEntry,
         device_id: str,
-        description: BestwaySwitchEntityDescription,
+        description: VestaSwitchEntityDescription,
     ) -> None:
         """Initialize switch."""
         super().__init__(coordinator, config_entry, device_id)

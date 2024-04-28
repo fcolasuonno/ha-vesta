@@ -1,4 +1,4 @@
-"""Bestway API models."""
+"""Vesta API models."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from typing import Any
 _LOGGER = getLogger(__name__)
 
 
-class BestwayDeviceType(Enum):
-    """Bestway device types."""
+class VestaDeviceType(Enum):
+    """Vesta device types."""
 
     AIRJET_SPA = "Airjet"
     AIRJET_V01_SPA = "Airjet V01"
@@ -22,21 +22,21 @@ class BestwayDeviceType(Enum):
     UNKNOWN = "Unknown"
 
     @staticmethod
-    def from_api_product_name(product_name: str) -> BestwayDeviceType:
+    def from_api_product_name(product_name: str) -> VestaDeviceType:
         """Get the enum value based on the 'product_name' field in the API response."""
 
         if product_name == "Airjet":
-            return BestwayDeviceType.AIRJET_SPA
+            return VestaDeviceType.AIRJET_SPA
         if product_name == "Airjet_V01":
-            return BestwayDeviceType.AIRJET_V01_SPA
+            return VestaDeviceType.AIRJET_V01_SPA
         if product_name == "Hydrojet":
-            return BestwayDeviceType.HYDROJET_SPA
+            return VestaDeviceType.HYDROJET_SPA
         if product_name == "Hydrojet_Pro":
-            return BestwayDeviceType.HYDROJET_PRO_SPA
+            return VestaDeviceType.HYDROJET_PRO_SPA
         if product_name == "泳池过滤器":
             # Chinese translates to "pool filter"
-            return BestwayDeviceType.POOL_FILTER
-        return BestwayDeviceType.UNKNOWN
+            return VestaDeviceType.POOL_FILTER
+        return VestaDeviceType.UNKNOWN
 
 
 class TemperatureUnit(Enum):
@@ -131,7 +131,7 @@ HYDROJET_BUBBLES_MAP = BubblesMapping(BV(0), BV(40), BV(100))
 
 
 @dataclass
-class BestwayDevice:
+class VestaDevice:
     """A device under a user's account."""
 
     protocol_version: int
@@ -145,13 +145,13 @@ class BestwayDevice:
     is_online: bool
 
     @property
-    def device_type(self) -> BestwayDeviceType:
+    def device_type(self) -> VestaDeviceType:
         """Get the derived device type."""
-        return BestwayDeviceType.from_api_product_name(self.product_name)
+        return VestaDeviceType.from_api_product_name(self.product_name)
 
 
 @dataclass
-class BestwayDeviceStatus:
+class VestaDeviceStatus:
     """A snapshot of the status of a spa (i.e. Lay-Z-Spa) device."""
 
     timestamp: int
@@ -159,7 +159,7 @@ class BestwayDeviceStatus:
 
 
 @dataclass
-class BestwayUserToken:
+class VestaUserToken:
     """User authentication token, obtained (and ideally stored) following a successful login."""
 
     user_id: str

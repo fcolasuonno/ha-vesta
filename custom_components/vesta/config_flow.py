@@ -1,4 +1,4 @@
-"""Config flow for Bestway integration."""
+"""Config flow for Vesta integration."""
 
 from __future__ import annotations
 
@@ -16,10 +16,10 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
-from .bestway.api import (
-    BestwayApi,
-    BestwayIncorrectPasswordException,
-    BestwayUserDoesNotExistException,
+from .vesta.api import (
+    VestaApi,
+    VestaIncorrectPasswordException,
+    VestaUserDoesNotExistException,
 )
 from .const import (
     CONF_API_ROOT,
@@ -60,7 +60,7 @@ async def validate_input(
     api_root = user_input[CONF_API_ROOT]
     session = async_get_clientsession(hass)
     async with asyncio.timeout(10):
-        token = await BestwayApi.get_user_token(
+        token = await VestaApi.get_user_token(
             session, username, user_input[CONF_PASSWORD], api_root
         )
 
@@ -70,8 +70,8 @@ async def validate_input(
     return config_entry_data
 
 
-class BestwayConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
-    """Handle a config flow for bestway."""
+class VestaConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
+    """Handle a config flow for vesta."""
 
     VERSION = 2
 
@@ -88,9 +88,9 @@ class BestwayConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
 
         try:
             config_entry_data = await validate_input(self.hass, user_input)
-        except BestwayUserDoesNotExistException:
+        except VestaUserDoesNotExistException:
             errors["base"] = "user_does_not_exist"
-        except BestwayIncorrectPasswordException:
+        except VestaIncorrectPasswordException:
             errors["base"] = "incorrect_password"
         except ClientConnectionError:
             errors["base"] = "cannot_connect"
