@@ -34,10 +34,18 @@ _PLATFORMS: list[Platform] = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vesta from a config entry."""
     username = entry.data.get(CONF_USERNAME)
+    if not username:
+        raise ConfigEntryNotReady
+    
     password = entry.data.get(CONF_PASSWORD)
+    if not password:
+        raise ConfigEntryNotReady
+    
     region = GizwitsClient.Region.from_value(entry.data.get(CONF_REGION))
     app_id = entry.data.get(CONF_APP_ID)
-
+    if not app_id:
+        raise ConfigEntryNotReady
+    
     session = async_get_clientsession(hass)
 
     # Create a device manager and login

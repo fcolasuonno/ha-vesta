@@ -36,7 +36,6 @@ async def async_setup_entry(
 
 class VestaTimer(VestaEntity, TimeEntity):
     """A vesta cooking device timer."""
-    should_poll = False
 
     def __init__(
             self,

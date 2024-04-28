@@ -53,7 +53,6 @@ class VestaClimate(VestaEntity, ClimateEntity):
     _attr_precision = PRECISION_TENTHS
     _attr_target_temperature_step = PRECISION_TENTHS
     _enable_turn_on_off_backwards_compatibility = False
-    should_poll = False
 
     def __init__(
             self,

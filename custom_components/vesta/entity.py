@@ -51,4 +51,8 @@ class VestaEntity(CoordinatorEntity[VestaCoordinator]):
     def available(self) -> bool:
         """Return True if entity is available."""
         return self.device.is_online
+    
+    @property
+    def should_poll(self) -> bool:
+        return False
 

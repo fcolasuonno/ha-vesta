@@ -38,7 +38,6 @@ class VestaRunningTime(VestaEntity, SensorEntity):
     """A sensor based on device metadata."""
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
-    should_poll = False
 
     def __init__(
             self,
@@ -76,7 +75,6 @@ class VestaRemainingTime(VestaEntity, SensorEntity):
     """A sensor based on device metadata."""
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
-    should_poll = False
 
     def __init__(
             self,
