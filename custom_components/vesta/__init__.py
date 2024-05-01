@@ -28,6 +28,7 @@ _PLATFORMS: list[Platform] = [
     Platform.TIME,
     Platform.SELECT,
     Platform.SENSOR,
+    Platform.EVENT,
 ]
 
 

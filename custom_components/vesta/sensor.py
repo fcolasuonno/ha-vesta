@@ -19,7 +19,6 @@ async def async_setup_entry(
         config_entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up sensor entities."""
     coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities: list[VestaEntity] = []
@@ -35,7 +34,6 @@ async def async_setup_entry(
 
 
 class VestaRunningTime(VestaEntity, SensorEntity):
-    """A sensor based on device metadata."""
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
 
@@ -45,7 +43,6 @@ class VestaRunningTime(VestaEntity, SensorEntity):
             config_entry: ConfigEntry,
             device: GizwitsDevice
     ) -> None:
-        """Initialize sensor."""
         super().__init__(coordinator, config_entry, device, SensorEntityDescription(
             key="running_time",
             name="Running time",
@@ -54,14 +51,12 @@ class VestaRunningTime(VestaEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        """Return the state of the sensor."""
         if not self.status:
             return None
         return self.device.attributes["runnning_time_hour"] * 60 + self.device.attributes["runnning_time_min"]
 
     @property
     def extra_state_attributes(self) -> dict[str, int] | None:
-        """Return the state attributes of the last update."""
         if not self.status:
             return None
 
@@ -72,7 +67,6 @@ class VestaRunningTime(VestaEntity, SensorEntity):
 
 
 class VestaRemainingTime(VestaEntity, SensorEntity):
-    """A sensor based on device metadata."""
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
 
@@ -82,7 +76,6 @@ class VestaRemainingTime(VestaEntity, SensorEntity):
             config_entry: ConfigEntry,
             device: GizwitsDevice
     ) -> None:
-        """Initialize sensor."""
         super().__init__(coordinator, config_entry, device, SensorEntityDescription(
             key="remaining_time",
             name="Remaining time",
@@ -91,14 +84,12 @@ class VestaRemainingTime(VestaEntity, SensorEntity):
 
     @property
     def native_value(self) -> float | None:
-        """Return the state of the sensor."""
         if not self.status:
             return None
         return self.device.attributes["remaining_time_hour"] * 60 + self.device.attributes["remaining_time_min"]
 
     @property
     def extra_state_attributes(self) -> dict[str, int] | None:
-        """Return the state attributes of the last update."""
         if not self.status:
             return None
 

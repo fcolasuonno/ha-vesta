@@ -1,5 +1,3 @@
-"""Climate platform support."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -27,7 +25,6 @@ async def async_setup_entry(
         config_entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up climate entities."""
     coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities: list[VestaEntity] = []
@@ -42,8 +39,6 @@ async def async_setup_entry(
 
 
 class VestaClimate(VestaEntity, ClimateEntity):
-    """A vesta cooking device."""
-
     _attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE
             | ClimateEntityFeature.TURN_OFF
@@ -60,7 +55,6 @@ class VestaClimate(VestaEntity, ClimateEntity):
             config_entry: ConfigEntry,
             device: GizwitsDevice
     ) -> None:
-        """Initialize cooker."""
         super().__init__(coordinator, config_entry, device, ClimateEntityDescription(
             key="temperature",
             name="Temperature",

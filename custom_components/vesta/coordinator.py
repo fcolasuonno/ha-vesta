@@ -22,7 +22,7 @@ class VestaCoordinator(DataUpdateCoordinator[dict[str, GizwitsDevice]]):
             name="Vesta Device Manager",
         )
         self.device_manager = device_manager
-        self.devices:dict[str, GizwitsDevice]= {}
+        self.devices: dict[str, GizwitsDevice] = {}
 
     def status_update(self, device: GizwitsDevice):
         self.devices[device.device_id] = device
@@ -48,4 +48,3 @@ class VestaCoordinator(DataUpdateCoordinator[dict[str, GizwitsDevice]]):
         so entities can quickly look up their data.
         """
         return self.devices
-

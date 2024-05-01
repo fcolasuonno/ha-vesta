@@ -1,5 +1,3 @@
-"""Binary sensor platform."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -27,7 +25,6 @@ async def async_setup_entry(
         config_entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up binary sensor entities."""
     coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     entities: list[VestaEntity] = []
 
@@ -40,7 +37,6 @@ async def async_setup_entry(
                 VestaRes2Sensor(coordinator, config_entry, device),
                 VestaWordHourSensor(coordinator, config_entry, device),
                 VestaWaterReachedTemperatureSensor(coordinator, config_entry, device),
-                VestaCookingFinish2Sensor(coordinator, config_entry, device),
             ]
         )
 
@@ -76,7 +72,7 @@ class VestaConnectivitySensor(VestaEntity, BinarySensorEntity):
 
 
 class VestaRes1Sensor(VestaEntity, BinarySensorEntity):
-    """Sensor for res1."""
+    """Timer started"""
 
     def __init__(
             self,
@@ -84,16 +80,15 @@ class VestaRes1Sensor(VestaEntity, BinarySensorEntity):
             config_entry: ConfigEntry,
             device: GizwitsDevice
     ) -> None:
-        """Initialize sensor."""
         super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
             key="res1",
-            entity_category=EntityCategory.DIAGNOSTIC,
-            name="Res1",
+            device_class=BinarySensorDeviceClass.RUNNING,
+            name="Timer started",
         ))
 
     @property
     def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes.get("res1")
+        return self.vesta_device is not None and not self.vesta_device.attributes.get("res1")
 
 
 class VestaRes2Sensor(VestaEntity, BinarySensorEntity):
@@ -115,27 +110,6 @@ class VestaRes2Sensor(VestaEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         return self.vesta_device is not None and self.vesta_device.attributes.get("res2")
-
-
-class VestaCookingFinish2Sensor(VestaEntity, BinarySensorEntity):
-    """Sensor for finished cooking."""
-
-    def __init__(
-            self,
-            coordinator: VestaCoordinator,
-            config_entry: ConfigEntry,
-            device: GizwitsDevice
-    ) -> None:
-        """Initialize sensor."""
-        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
-            key="cooking_finish",
-            entity_category=EntityCategory.DIAGNOSTIC,
-            name="Finished cooking",
-        ))
-
-    @property
-    def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes.get("cooking_finish")
 
 
 class VestaWordHourSensor(VestaEntity, BinarySensorEntity):
@@ -171,7 +145,7 @@ class VestaWaterReachedTemperatureSensor(VestaEntity, BinarySensorEntity):
         """Initialize sensor."""
         super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
             key="water_temp_reached",
-            entity_category=EntityCategory.DIAGNOSTIC,
+            device_class=BinarySensorDeviceClass.HEAT,
             name="Water temperature reached",
         ))
 

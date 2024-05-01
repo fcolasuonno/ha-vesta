@@ -1,5 +1,3 @@
-"""Climate platform support."""
-
 from __future__ import annotations
 
 from datetime import time
@@ -20,7 +18,6 @@ async def async_setup_entry(
         config_entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up time entities."""
     coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities: list[VestaEntity] = []
@@ -35,15 +32,12 @@ async def async_setup_entry(
 
 
 class VestaTimer(VestaEntity, TimeEntity):
-    """A vesta cooking device timer."""
-
     def __init__(
             self,
             coordinator: VestaCoordinator,
             config_entry: ConfigEntry,
             device: GizwitsDevice
     ) -> None:
-        """Initialize timer."""
         super().__init__(coordinator, config_entry, device, TimeEntityDescription(
             key="cooking_time",
             name="Cooking Time",
@@ -57,11 +51,9 @@ class VestaTimer(VestaEntity, TimeEntity):
         return time(hour=self.device.attributes["set_time_hour"], minute=self.device.attributes["set_time_min"])
 
     async def async_set_value(self, value: time) -> None:
-        """Set a new timer."""
         if value is None:
             return
         hour = value.hour
         minute = value.minute
         await self.device.set_device_attributes({"set_time_hour": hour, "set_time_min": minute})
-
         await self.coordinator.async_refresh()

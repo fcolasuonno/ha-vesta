@@ -19,7 +19,6 @@ async def async_setup_entry(
         config_entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up select entities."""
     coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities: list[VestaEntity] = []
@@ -34,8 +33,6 @@ async def async_setup_entry(
 
 
 class VestaTempUnitSelect(VestaEntity, SelectEntity):
-    """A select for C or F."""
-
     def __init__(
             self,
             coordinator: VestaCoordinator,
@@ -52,14 +49,12 @@ class VestaTempUnitSelect(VestaEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
-        """Return the selected entity option to represent the entity state."""
         if not self.status:
             return None
         t = self.device.attributes.get("temp_unit")
-        if t == None:
+        if t is None:
             return None
         return self.options[t]
-
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
