@@ -23,7 +23,7 @@ from .const import (
 
 _LOGGER = getLogger(__name__)
 _PLATFORMS: list[Platform] = [
-    # Platform.BINARY_SENSOR,
+    Platform.BINARY_SENSOR,
     Platform.CLIMATE,
     Platform.TIME,
     # Platform.SELECT,

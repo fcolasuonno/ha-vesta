@@ -16,103 +16,57 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import VestaUpdateCoordinator
-from .vesta.model import VestaDeviceType
-from .const import DOMAIN, Icon
+from . import VestaCoordinator
+from .const import DOMAIN
 from .entity import VestaEntity
-
-_SPA_CONNECTIVITY_SENSOR_DESCRIPTION = BinarySensorEntityDescription(
-    key="spa_connected",
-    device_class=BinarySensorDeviceClass.CONNECTIVITY,
-    entity_category=EntityCategory.DIAGNOSTIC,
-    name="Spa Connected",
-)
-
-_AIRJET_SPA_ERRORS_SENSOR_DESCRIPTION = BinarySensorEntityDescription(
-    key="spa_has_error",
-    name="Spa Errors",
-    device_class=BinarySensorDeviceClass.PROBLEM,
-)
-
-_POOL_FILTER_CONNECTIVITY_SENSOR_DESCRIPTION = BinarySensorEntityDescription(
-    key="pool_filter_connected",
-    device_class=BinarySensorDeviceClass.CONNECTIVITY,
-    entity_category=EntityCategory.DIAGNOSTIC,
-    name="Pool Filter Connected",
-)
-
-_POOL_FILTER_CHANGE_SENSOR_DESCRIPTION = BinarySensorEntityDescription(
-    key="pool_filter_change_required",
-    name="Pool Filter Change Required",
-    icon=Icon.FILTER,
-)
-
-_POOL_FILTER_ERROR_SENSOR_DESCRIPTION = BinarySensorEntityDescription(
-    key="pool_filter_has_error",
-    name="Pool Filter Errors",
-    device_class=BinarySensorDeviceClass.PROBLEM,
-)
+from .pygizwits import GizwitsDevice
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up binary sensor entities."""
-    coordinator: VestaUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: VestaCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     entities: list[VestaEntity] = []
 
-    for device_id, device in coordinator.api.devices.items():
-        # All devices support the connectivity sensor
-        entities.append(
-            DeviceConnectivitySensor(
-                coordinator,
-                config_entry,
-                device_id,
-                _SPA_CONNECTIVITY_SENSOR_DESCRIPTION,
-            )
+    for device in coordinator.device_manager.devices.values():
+        entities.extend(
+            [
+                VestaConnectivitySensor(coordinator, config_entry, device),
+                VestaErrorsSensor(coordinator, config_entry, device),
+                VestaRes1Sensor(coordinator, config_entry, device),
+                VestaRes2Sensor(coordinator, config_entry, device),
+                VestaWordHourSensor(coordinator, config_entry, device),
+                VestaWaterReachedTemperatureSensor(coordinator, config_entry, device),
+                VestaCookingFinish2Sensor(coordinator, config_entry, device),
+            ]
         )
-
-        if device.device_type == VestaDeviceType.AIRJET_SPA:
-            entities.append(AirjetSpaErrorsSensor(coordinator, config_entry, device_id))
-
-        if device.device_type == VestaDeviceType.POOL_FILTER:
-            entities.extend(
-                [
-                    PoolFilterChangeRequiredSensor(
-                        coordinator, config_entry, device_id
-                    ),
-                    PoolFilterErrorSensor(coordinator, config_entry, device_id),
-                ]
-            )
 
     async_add_entities(entities)
 
 
-class DeviceConnectivitySensor(VestaEntity, BinarySensorEntity):
+class VestaConnectivitySensor(VestaEntity, BinarySensorEntity):
     """Sensor to indicate whether a device is currently online."""
 
     def __init__(
-        self,
-        coordinator: VestaUpdateCoordinator,
-        config_entry: ConfigEntry,
-        device_id: str,
-        entity_description: BinarySensorEntityDescription,
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
     ) -> None:
         """Initialize sensor."""
-        self.entity_description = entity_description
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-        self._attr_unique_id = f"{device_id}_{self.entity_description.key}"
-        super().__init__(
-            coordinator,
-            config_entry,
-            device_id,
-        )
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="connected",
+            device_class=BinarySensorDeviceClass.CONNECTIVITY,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            name="Connected",
+        ))
 
     @property
     def is_on(self) -> bool | None:
-        """Return True if the spa is online."""
+        """Return True if online."""
         return self.vesta_device is not None and self.vesta_device.is_online
 
     @property
@@ -121,37 +75,144 @@ class DeviceConnectivitySensor(VestaEntity, BinarySensorEntity):
         return True
 
 
-class AirjetSpaErrorsSensor(VestaEntity, BinarySensorEntity):
-    """Sensor to indicate an error state for an Airjet spa."""
+class VestaRes1Sensor(VestaEntity, BinarySensorEntity):
+    """Sensor for res1."""
 
     def __init__(
-        self,
-        coordinator: VestaUpdateCoordinator,
-        config_entry: ConfigEntry,
-        device_id: str,
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
     ) -> None:
         """Initialize sensor."""
-        self.entity_description = _AIRJET_SPA_ERRORS_SENSOR_DESCRIPTION
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-        self._attr_unique_id = f"{device_id}_{self.entity_description.key}"
-        super().__init__(
-            coordinator,
-            config_entry,
-            device_id,
-        )
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="res1",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            name="Res1",
+        ))
 
     @property
     def is_on(self) -> bool | None:
-        """Return true if the spa is reporting an error."""
+        return self.vesta_device is not None and self.vesta_device.attributes["res1"]
+
+
+class VestaRes2Sensor(VestaEntity, BinarySensorEntity):
+    """Sensor for res2."""
+
+    def __init__(
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
+    ) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="res2",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            name="Res2",
+        ))
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.vesta_device is not None and self.vesta_device.attributes["res2"]
+
+
+class VestaCookingFinish2Sensor(VestaEntity, BinarySensorEntity):
+    """Sensor for finished cooking."""
+
+    def __init__(
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
+    ) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="cooking_finish",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            name="Finished cooking",
+        ))
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.vesta_device is not None and self.vesta_device.attributes["cooking_finish"]
+
+
+class VestaWordHourSensor(VestaEntity, BinarySensorEntity):
+    """Sensor for word hour 100 ????."""
+
+    def __init__(
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
+    ) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="word_hour",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            name="Word hour 100?",
+        ))
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.vesta_device is not None and self.vesta_device.attributes["word_hour100"]
+
+
+class VestaWaterReachedTemperatureSensor(VestaEntity, BinarySensorEntity):
+    """Sensor for water reached temperature."""
+
+    def __init__(
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
+    ) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="water_temp_reached",
+            entity_category=EntityCategory.DIAGNOSTIC,
+            name="Water temperature reached",
+        ))
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.vesta_device is not None and self.vesta_device.attributes["water_hated"]
+
+
+class VestaErrorsSensor(VestaEntity, BinarySensorEntity):
+    """Sensor to indicate an error state."""
+
+    def __init__(
+            self,
+            coordinator: VestaCoordinator,
+            config_entry: ConfigEntry,
+            device: GizwitsDevice
+    ) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
+            key="_has_error",
+            name="Errors",
+            device_class=BinarySensorDeviceClass.PROBLEM,
+        ))
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if reporting an error."""
         if not self.status:
             return None
 
         errors = []
-        for err_num in range(1, 10):
-            if self.status.attrs[f"system_err{err_num}"] == 1:
+        for err_num in range(0, 1):
+            if self.device.attributes["error_code"][err_num] != 0:
                 errors.append(err_num)
 
-        return len(errors) > 0 or self.status.attrs["earth"]
+        return (len(errors) > 0 or
+                self.device.attributes["low_water_level"] or
+                self.device.attributes["not_working_properly"] or
+                self.device.attributes["loss_power"] or
+                self.device.attributes["no_water"] or
+                self.device.attributes["work_alert"])
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
@@ -160,64 +221,11 @@ class AirjetSpaErrorsSensor(VestaEntity, BinarySensorEntity):
             return None
 
         return {
-            "e01": self.status.attrs["system_err1"],
-            "e02": self.status.attrs["system_err2"],
-            "e03": self.status.attrs["system_err3"],
-            "e04": self.status.attrs["system_err4"],
-            "e05": self.status.attrs["system_err5"],
-            "e06": self.status.attrs["system_err6"],
-            "e07": self.status.attrs["system_err7"],
-            "e08": self.status.attrs["system_err8"],
-            "e09": self.status.attrs["system_err9"],
-            "gcf": self.status.attrs["earth"],
+            "e00": self.device.attributes["error_code"][0],
+            "e01": self.device.attributes["error_code"][1],
+            "low_water_level": self.device.attributes["low_water_level"],
+            "not_working_properly": self.device.attributes["not_working_properly"],
+            "loss_power": self.device.attributes["loss_power"],
+            "no_water": self.device.attributes["no_water"],
+            "work_alert": self.device.attributes["work_alert"],
         }
-
-
-class PoolFilterChangeRequiredSensor(VestaEntity, BinarySensorEntity):
-    """Sensor to indicate whether a pool filter requires a change."""
-
-    def __init__(
-        self,
-        coordinator: VestaUpdateCoordinator,
-        config_entry: ConfigEntry,
-        device_id: str,
-    ) -> None:
-        """Initialize sensor."""
-        self.entity_description = _POOL_FILTER_CHANGE_SENSOR_DESCRIPTION
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-        self._attr_unique_id = f"{device_id}_{self.entity_description.key}"
-        super().__init__(
-            coordinator,
-            config_entry,
-            device_id,
-        )
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if the spa is online."""
-        return self.status is not None and self.status.attrs["filter"]
-
-
-class PoolFilterErrorSensor(VestaEntity, BinarySensorEntity):
-    """Sensor to indicate an error state for a pool filter."""
-
-    def __init__(
-        self,
-        coordinator: VestaUpdateCoordinator,
-        config_entry: ConfigEntry,
-        device_id: str,
-    ) -> None:
-        """Initialize sensor."""
-        self.entity_description = _POOL_FILTER_ERROR_SENSOR_DESCRIPTION
-        self._attr_entity_category = EntityCategory.DIAGNOSTIC
-        self._attr_unique_id = f"{device_id}_{self.entity_description.key}"
-        super().__init__(
-            coordinator,
-            config_entry,
-            device_id,
-        )
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if the pool filter is reporting an error."""
-        return self.status is not None and self.status.attrs["error"]
