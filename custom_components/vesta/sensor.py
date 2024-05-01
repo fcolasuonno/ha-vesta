@@ -24,7 +24,7 @@ async def async_setup_entry(
 
     entities: list[VestaEntity] = []
 
-    for device_id, device in coordinator.device_manager.devices.items():
+    for device in coordinator.device_manager.devices.values():
         entities.extend(
             [
                 VestaRunningTime(coordinator, config_entry, device),

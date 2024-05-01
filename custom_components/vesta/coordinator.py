@@ -34,7 +34,7 @@ class VestaCoordinator(DataUpdateCoordinator[dict[str, GizwitsDevice]]):
             async with asyncio.timeout(10):
                 self.device_manager.on("device_status_update", self.status_update)
                 self.devices = await self.device_manager.get_devices()
-                for device_id, device in self.devices.items():
+                for device in self.devices.values():
                     await device.subscribe_to_device_updates()
         except Exception as err:
             _LOGGER.exception("Data update failed")

@@ -93,7 +93,7 @@ class VestaRes1Sensor(VestaEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes["res1"]
+        return self.vesta_device is not None and self.vesta_device.attributes.get("res1")
 
 
 class VestaRes2Sensor(VestaEntity, BinarySensorEntity):
@@ -114,7 +114,7 @@ class VestaRes2Sensor(VestaEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes["res2"]
+        return self.vesta_device is not None and self.vesta_device.attributes.get("res2")
 
 
 class VestaCookingFinish2Sensor(VestaEntity, BinarySensorEntity):
@@ -135,7 +135,7 @@ class VestaCookingFinish2Sensor(VestaEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes["cooking_finish"]
+        return self.vesta_device is not None and self.vesta_device.attributes.get("cooking_finish")
 
 
 class VestaWordHourSensor(VestaEntity, BinarySensorEntity):
@@ -156,7 +156,7 @@ class VestaWordHourSensor(VestaEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes["word_hour100"]
+        return self.vesta_device is not None and self.vesta_device.attributes.get("word_hour100")
 
 
 class VestaWaterReachedTemperatureSensor(VestaEntity, BinarySensorEntity):
@@ -177,7 +177,7 @@ class VestaWaterReachedTemperatureSensor(VestaEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.vesta_device is not None and self.vesta_device.attributes["water_hated"]
+        return self.vesta_device is not None and self.vesta_device.attributes.get("water_hated")
 
 
 class VestaErrorsSensor(VestaEntity, BinarySensorEntity):
@@ -204,15 +204,15 @@ class VestaErrorsSensor(VestaEntity, BinarySensorEntity):
 
         errors = []
         for err_num in range(0, 1):
-            if self.device.attributes["error_code"][err_num] != 0:
+            if self.device.attributes.get("error_code")[err_num] != 0:
                 errors.append(err_num)
 
         return (len(errors) > 0 or
-                self.device.attributes["low_water_level"] or
-                self.device.attributes["not_working_properly"] or
-                self.device.attributes["loss_power"] or
-                self.device.attributes["no_water"] or
-                self.device.attributes["work_alert"])
+                self.device.attributes.get("low_water_level") or
+                self.device.attributes.get("not_working_properly") or
+                self.device.attributes.get("loss_power") or
+                self.device.attributes.get("no_water") or
+                self.device.attributes.get("work_alert"))
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
@@ -221,11 +221,11 @@ class VestaErrorsSensor(VestaEntity, BinarySensorEntity):
             return None
 
         return {
-            "e00": self.device.attributes["error_code"][0],
-            "e01": self.device.attributes["error_code"][1],
-            "low_water_level": self.device.attributes["low_water_level"],
-            "not_working_properly": self.device.attributes["not_working_properly"],
-            "loss_power": self.device.attributes["loss_power"],
-            "no_water": self.device.attributes["no_water"],
-            "work_alert": self.device.attributes["work_alert"],
+            "e00": self.device.attributes.get("error_code")[0],
+            "e01": self.device.attributes.get("error_code")[1],
+            "low_water_level": self.device.attributes.get("low_water_level"),
+            "not_working_properly": self.device.attributes.get("not_working_properly"),
+            "loss_power": self.device.attributes.get("loss_power"),
+            "no_water": self.device.attributes.get("no_water"),
+            "work_alert": self.device.attributes.get("work_alert"),
         }
