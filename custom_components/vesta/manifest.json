@@ -12,5 +12,5 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/fcolasuonno/ha-vesta/issues",
   "requirements": ["pyee>=11.1.0"],
-  "version": "0.0.1a"
+  "version": "0.0.1"
 }
