@@ -33,7 +33,6 @@ async def async_setup_entry(
             [
                 VestaConnectivitySensor(coordinator, config_entry, device),
                 VestaErrorsSensor(coordinator, config_entry, device),
-                VestaRes1Sensor(coordinator, config_entry, device),
                 VestaRes2Sensor(coordinator, config_entry, device),
                 VestaWordHourSensor(coordinator, config_entry, device),
                 VestaWaterReachedTemperatureSensor(coordinator, config_entry, device),
@@ -69,26 +68,6 @@ class VestaConnectivitySensor(VestaEntity, BinarySensorEntity):
     def available(self) -> bool:
         """Return True, as the connectivity sensor is always available."""
         return True
-
-
-class VestaRes1Sensor(VestaEntity, BinarySensorEntity):
-    """Timer started"""
-
-    def __init__(
-            self,
-            coordinator: VestaCoordinator,
-            config_entry: ConfigEntry,
-            device: GizwitsDevice
-    ) -> None:
-        super().__init__(coordinator, config_entry, device, BinarySensorEntityDescription(
-            key="res1",
-            device_class=BinarySensorDeviceClass.RUNNING,
-            name="Timer started",
-        ))
-
-    @property
-    def is_on(self) -> bool | None:
-        return self.vesta_device is not None and not self.vesta_device.attributes.get("res1")
 
 
 class VestaRes2Sensor(VestaEntity, BinarySensorEntity):
